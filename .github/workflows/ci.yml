@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "vibe/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run build
+      - name: server smoke test
+        run: |
+          PORT=3210 DB_PATH="${{ runner.temp }}/pyrocardian-ci.db" npx tsx apps/server/src/index.ts > /tmp/pyro-ci-server.log 2>&1 &
+          echo $! > /tmp/pyro-ci-server.pid
+          for i in $(seq 1 30); do
+            if node -e "fetch('http://127.0.0.1:3210/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; then
+              break
+            fi
+            sleep 1
+          done
+          if ! BASE_URL=http://127.0.0.1:3210 node scripts/smoke-test.mjs; then
+            cat /tmp/pyro-ci-server.log
+            kill "$(cat /tmp/pyro-ci-server.pid)" 2>/dev/null
+            exit 1
+          fi
+          if ! BASE_URL=http://127.0.0.1:3210 node scripts/battle-test.mjs; then
+            cat /tmp/pyro-ci-server.log
+            kill "$(cat /tmp/pyro-ci-server.pid)" 2>/dev/null
+            exit 1
+          fi
+          kill "$(cat /tmp/pyro-ci-server.pid)" 2>/dev/null
