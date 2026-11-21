@@ -1,0 +1,81 @@
+[
+  {
+    "id": "visitor",
+    "name": "异世界访客",
+    "nameEn": "Isekai Visitor",
+    "combat": true,
+    "role": "support",
+    "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
+    "description": "每个新玩家注册后获得的角色卡，是卡迪安生活的入口，背单词从这里开始。战斗中只能使用通用技能卡。",
+    "descriptionEn": "The character card every new player receives on registration: the gateway to life in Cardian, where word learning begins. In battle only common skill cards can be used."
+  },
+  {
+    "id": "scholar",
+    "name": "学者",
+    "nameEn": "Scholar",
+    "combat": false,
+    "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
+    "description": "唯一可以在熔炉中合成技能卡的职业。功能性角色，不参与战斗。",
+    "descriptionEn": "The only class that can synthesize skill cards at the forge. A functional character that does not fight."
+  },
+  {
+    "id": "summoner",
+    "name": "召唤师",
+    "nameEn": "Summoner",
+    "combat": true,
+    "role": "summon",
+    "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
+    "description": "除通用技能卡外，还可以使用召唤技能卡，召唤有独立血量的召唤物并肩作战。",
+    "descriptionEn": "Besides common skill cards, can use summon skill cards to call forth summons with their own HP."
+  },
+  {
+    "id": "mage_fire",
+    "name": "火魔法师",
+    "nameEn": "Fire Mage",
+    "combat": true,
+    "role": "damage",
+    "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
+    "description": "火系魔法师，专属技能卡附带灼烧效果。",
+    "descriptionEn": "Fire mage; exclusive skill cards apply burn."
+  },
+  {
+    "id": "mage_water",
+    "name": "水魔法师",
+    "nameEn": "Water Mage",
+    "combat": true,
+    "role": "support",
+    "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
+    "description": "水系魔法师，专属技能卡偏治疗与护盾。",
+    "descriptionEn": "Water mage; exclusive skill cards focus on healing and shields."
+  },
+  {
+    "id": "mage_thunder",
+    "name": "雷魔法师",
+    "nameEn": "Thunder Mage",
+    "combat": true,
+    "role": "damage",
+    "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
+    "description": "雷系魔法师，专属技能卡偏先手与连锁伤害。",
+    "descriptionEn": "Thunder mage; exclusive skill cards favor initiative and chain damage."
+  },
+  {
+    "id": "mage_ice",
+    "name": "冰魔法师",
+    "nameEn": "Ice Mage",
+    "combat": true,
+    "role": "damage",
+    "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
+    "description": "冰系魔法师，专属技能卡附带冻结效果。",
+    "descriptionEn": "Ice mage; exclusive skill cards apply freeze."
+  },
+  {
+    "id": "mage_earth",
+    "name": "土魔法师",
+    "nameEn": "Earth Mage",
+    "combat": true,
+    "role": "tank",
+    "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
+    "description": "土系魔法师，专属技能卡偏护盾与嘲讽。",
+    "descriptionEn": "Earth mage; exclusive skill cards focus on shields and taunt."
+  }
+]
