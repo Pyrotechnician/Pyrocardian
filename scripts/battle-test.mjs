@@ -52,7 +52,8 @@ if (players.length !== 2) fail(`players=${players.length}`);
 const firstTurn = roomA.state.turn;
 if (!firstTurn) fail("empty turn");
 
-roomA.send("endTurn");
+const firstRoom = firstTurn === roomA.sessionId ? roomA : roomB;
+firstRoom.send("endTurn");
 await waitFor(() => roomA.state.turn !== firstTurn && roomA.state.turn !== "", "turn switch");
 
 const skills = await (await fetch(`${base}/api/content/skills`)).json();
