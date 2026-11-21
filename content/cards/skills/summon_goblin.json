@@ -1,0 +1,13 @@
+{
+  "id": "summon_goblin",
+  "name": "召唤哥布林",
+  "kind": "summon",
+  "rarity": "rare",
+  "cost": 3,
+  "target": "none",
+  "power": 0,
+  "classId": "summoner",
+  "summonId": "goblin",
+  "effects": [],
+  "text": "召唤师专属：召唤一只哥布林为你作战。"
+}

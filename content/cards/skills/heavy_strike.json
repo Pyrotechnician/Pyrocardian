@@ -1,0 +1,11 @@
+{
+  "id": "heavy_strike",
+  "name": "重锤猛击",
+  "kind": "damage",
+  "rarity": "common",
+  "cost": 2,
+  "target": "enemy",
+  "power": 6,
+  "effects": [],
+  "text": "对敌方造成 6 点伤害。"
+}

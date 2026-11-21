@@ -1,0 +1,50 @@
+# Pyrocardian · 卡迪安
+
+source and assets of the Cardian world。
+
+登录网站，即进入卡牌世界：一切皆卡——角色卡、技能卡、单词卡、场景卡。
+
+设计文档见 [docs/DESIGN.md](docs/DESIGN.md)。
+
+## 技术栈
+
+- `apps/web`：Vite + React + TypeScript 前端（小镇广场 / 收藏馆 / 图书馆 / 竞技场）
+- `apps/server`：单个 Node 进程——Hono 提供 REST API，Colyseus 挂在同一 HTTP server 上提供 WebSocket 战斗房间（服务端权威），同时托管前端构建产物与卡图
+- `packages/shared`：卡牌类型定义 + JSON 内容校验，前后端共用一份卡牌定义
+- `packages/db`：better-sqlite3 访问 SQLite 单文件（WAL 模式），手写迁移
+- `content/cards`：卡牌定义（JSON，数据驱动，改数值直接编辑）；`content/assets/cards`：卡图（文件名 = 卡牌 id）
+
+## 本地开发
+
+要求 Node.js >= 20。
+
+```bash
+npm install
+npm run dev
+```
+
+- 前端：http://localhost:5173（`/api`、`/assets` 自动代理到 3000）
+- 服务端：http://localhost:3000
+
+## 生产部署（自己的服务器）
+
+```bash
+npm install
+npm run build
+npm run start -w @pyrocardian/server   # 端口用 PORT 环境变量指定，默认 3000
+```
+
+单进程即可对外提供 API、战斗房间、前端页面和卡图；用 Caddy/nginx 反代并开启 HTTPS 即可。
+数据库位于 `data/pyrocardian.db`，备份时复制该文件（及同目录的 `-wal` / `-shm`）即可。
+
+## 目录结构
+
+```
+apps/web         前端（Vite + React + TS）
+apps/server      API + 战斗房间（Hono + Colyseus，单进程）
+packages/shared  类型与卡牌校验
+packages/db      SQLite 数据层
+content/cards    卡牌 JSON（classes / skills / summons / words）
+content/assets   卡图等静态资源
+docs             设计文档
+```

@@ -1,0 +1,13 @@
+{
+  "id": "frost_shard",
+  "name": "寒冰碎片",
+  "kind": "damage",
+  "rarity": "rare",
+  "cost": 2,
+  "target": "enemy",
+  "power": 4,
+  "classId": "mage_ice",
+  "element": "ice",
+  "effects": ["freeze"],
+  "text": "冰魔法师专属：对敌方造成 4 点伤害，并冻结其一回合。"
+}

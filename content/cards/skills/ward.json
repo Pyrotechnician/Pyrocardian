@@ -1,0 +1,11 @@
+{
+  "id": "ward",
+  "name": "木盾",
+  "kind": "shield",
+  "rarity": "common",
+  "cost": 1,
+  "target": "self",
+  "power": 3,
+  "effects": [],
+  "text": "获得 3 点护盾。"
+}

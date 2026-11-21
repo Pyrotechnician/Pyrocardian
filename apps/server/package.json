@@ -1,0 +1,24 @@
+{
+  "name": "@pyrocardian/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --tsconfig tsconfig.json src/index.ts",
+    "start": "tsx --tsconfig tsconfig.json src/index.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@colyseus/schema": "^2.0.5",
+    "@colyseus/ws-transport": "^0.15.3",
+    "@hono/node-server": "^1.13.7",
+    "@pyrocardian/db": "*",
+    "@pyrocardian/shared": "*",
+    "colyseus": "^0.15.17",
+    "hono": "^4.6.12"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

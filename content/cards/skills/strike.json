@@ -1,0 +1,11 @@
+{
+  "id": "strike",
+  "name": "重击",
+  "kind": "damage",
+  "rarity": "common",
+  "cost": 1,
+  "target": "enemy",
+  "power": 3,
+  "effects": [],
+  "text": "对敌方造成 3 点伤害。"
+}
