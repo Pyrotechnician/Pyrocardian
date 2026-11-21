@@ -60,6 +60,12 @@ button.link {
   margin-top: 10px;
 }
 
+button.ghost {
+  background: var(--card-bg);
+  color: var(--ink);
+  border: 2px solid var(--frame);
+}
+
 .error {
   color: #b3372f;
 }

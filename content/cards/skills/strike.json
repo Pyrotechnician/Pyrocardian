@@ -1,11 +1,13 @@
 {
   "id": "strike",
   "name": "重击",
+  "nameEn": "Heavy Strike",
   "kind": "damage",
   "rarity": "common",
   "cost": 1,
   "target": "enemy",
   "power": 3,
   "effects": [],
-  "text": "对敌方造成 3 点伤害。"
+  "text": "对敌方造成 3 点伤害。",
+  "textEn": "Deal 3 damage to the enemy."
 }

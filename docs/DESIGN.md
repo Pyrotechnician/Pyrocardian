@@ -46,6 +46,12 @@
 
 - 卡尘 = 通用货币；分解（回炉）人人可做，合成（重铸）仅学者可做。
 
+## 界面语言
+
+- 中英双语 UI：自研轻量字典（`apps/web/src/i18n.ts`），默认跟随浏览器语言，广场右上角可切换。
+- 卡牌 JSON 可选英文字段（`nameEn`/`descriptionEn`/`textEn`），缺省回退中文；服务端错误以错误码返回，客户端翻译。
+- CI：GitHub Actions 跑 typecheck + build + 服务端冒烟测试（`scripts/smoke-test.mjs`）。
+
 ## 技术栈
 
 - Monorepo（npm workspaces）：`apps/web`（Vite + React + TS）、`apps/server`（单个 Node 进程：Hono REST + Colyseus WebSocket 战斗房间 + 静态资源）、`packages/shared`（类型 + 卡牌 JSON 校验，前后端共用）、`packages/db`（better-sqlite3，SQLite 单文件 WAL）、`content`（卡牌 JSON + 卡图）。

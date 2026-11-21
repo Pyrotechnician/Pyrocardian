@@ -1,11 +1,13 @@
 {
   "id": "ward",
   "name": "木盾",
+  "nameEn": "Wooden Ward",
   "kind": "shield",
   "rarity": "common",
   "cost": 1,
   "target": "self",
   "power": 3,
   "effects": [],
-  "text": "获得 3 点护盾。"
+  "text": "获得 3 点护盾。",
+  "textEn": "Gain 3 shield."
 }

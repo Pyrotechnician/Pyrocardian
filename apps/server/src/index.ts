@@ -68,7 +68,7 @@ const authMw = async (c: Context<AppContext>, next: Next) => {
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
   const payload = token ? verifyToken(token, jwtSecret) : null;
   if (!payload || typeof payload.sub !== "string") {
-    return c.json({ error: "未登录或登录已过期" }, 401);
+    return c.json({ error: "auth.unauthorized" }, 401);
   }
   c.set("userId", payload.sub);
   await next();
@@ -88,7 +88,7 @@ app.post("/api/auth/register", async (c) => {
   const email = String(body.email ?? "").trim().toLowerCase();
   const password = String(body.password ?? "");
   if (!email.includes("@") || password.length < 6) {
-    return c.json({ error: "邮箱无效，或密码少于 6 位" }, 400);
+    return c.json({ error: "auth.invalid_input" }, 400);
   }
   const id = crypto.randomUUID();
   try {
@@ -99,7 +99,7 @@ app.post("/api/auth/register", async (c) => {
       Date.now()
     );
   } catch {
-    return c.json({ error: "该邮箱已注册" }, 409);
+    return c.json({ error: "auth.email_taken" }, 409);
   }
   seedStarterCards(id);
   return c.json({ token: signToken({ sub: id }, jwtSecret, TOKEN_TTL_SECONDS), user: { id, email } });
@@ -112,7 +112,7 @@ app.post("/api/auth/login", async (c) => {
     .prepare("SELECT id, pass_hash FROM users WHERE email = ?")
     .get(email) as { id: string; pass_hash: string } | undefined;
   if (!row || !verifyPassword(String(body.password ?? ""), row.pass_hash)) {
-    return c.json({ error: "邮箱或密码错误" }, 401);
+    return c.json({ error: "auth.invalid_credentials" }, 401);
   }
   return c.json({ token: signToken({ sub: row.id }, jwtSecret, TOKEN_TTL_SECONDS), user: { id: row.id, email } });
 });
@@ -145,7 +145,7 @@ app.post("/api/words/review", authMw, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const wordId = String(body.wordId ?? "");
   if (!content.words.some((w) => w.id === wordId)) {
-    return c.json({ error: "未知单词卡" }, 400);
+    return c.json({ error: "words.unknown_card" }, 400);
   }
   const userId = c.get("userId");
   const correct = Boolean(body.correct);

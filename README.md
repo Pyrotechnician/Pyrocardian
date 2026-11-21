@@ -14,6 +14,16 @@ source and assets of the Cardian world。
 - `packages/db`：better-sqlite3 访问 SQLite 单文件（WAL 模式），手写迁移
 - `content/cards`：卡牌定义（JSON，数据驱动，改数值直接编辑）；`content/assets/cards`：卡图（文件名 = 卡牌 id）
 
+## 界面语言
+
+支持中英双语：默认跟随浏览器语言，可在广场右上角手动切换（存于 localStorage）。
+卡牌内容的英文字段为可选：职业 `nameEn`/`descriptionEn`，技能卡与召唤物 `nameEn`/`textEn`；缺省时回退到中文。
+服务端错误以错误码（如 `auth.unauthorized`）返回，由客户端翻译。
+
+## CI
+
+GitHub Actions（`.github/workflows/ci.yml`）：push / PR 时自动跑 `npm ci`、`typecheck`、`build`，以及服务端冒烟测试（`scripts/smoke-test.mjs`，临时库 + 注册/鉴权/背单词全链路）。
+
 ## 本地开发
 
 要求 Node.js >= 20。

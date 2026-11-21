@@ -1,6 +1,7 @@
 {
   "id": "frost_shard",
   "name": "寒冰碎片",
+  "nameEn": "Frost Shard",
   "kind": "damage",
   "rarity": "rare",
   "cost": 2,
@@ -9,5 +10,6 @@
   "classId": "mage_ice",
   "element": "ice",
   "effects": ["freeze"],
-  "text": "冰魔法师专属：对敌方造成 4 点伤害，并冻结其一回合。"
+  "text": "冰魔法师专属：对敌方造成 4 点伤害，并冻结其一回合。",
+  "textEn": "Ice mage exclusive: deal 4 damage and freeze the enemy for a turn."
 }

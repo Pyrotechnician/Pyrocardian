@@ -1,6 +1,7 @@
 {
   "id": "fireball",
   "name": "火球术",
+  "nameEn": "Fireball",
   "kind": "damage",
   "rarity": "rare",
   "cost": 2,
@@ -9,5 +10,6 @@
   "classId": "mage_fire",
   "element": "fire",
   "effects": ["burn"],
-  "text": "火魔法师专属：对敌方造成 5 点伤害，并使其灼烧。"
+  "text": "火魔法师专属：对敌方造成 5 点伤害，并使其灼烧。",
+  "textEn": "Fire mage exclusive: deal 5 damage and apply burn."
 }

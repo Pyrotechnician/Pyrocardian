@@ -3,5 +3,6 @@
   "name": "哥布林",
   "hp": 4,
   "attack": 2,
-  "text": "每回合攻击一次。"
+  "text": "每回合攻击一次。",
+  "textEn": "Attacks once each turn."
 }

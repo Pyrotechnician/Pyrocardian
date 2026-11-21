@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { ClassDef, SkillCardDef, WordCardDef } from "@pyrocardian/shared";
 import { api } from "../api";
 import { SkillCardView, WordCardView } from "../components/CardView";
+import { localizeClassName, type T, type UILang } from "../i18n";
 
 export interface CardInstanceRow {
   instance_id: string;
@@ -13,7 +14,17 @@ export interface CardInstanceRow {
   created_at: number;
 }
 
-export default function Collection({ token, cards }: { token: string; cards: CardInstanceRow[] }) {
+export default function Collection({
+  token,
+  cards,
+  lang,
+  t,
+}: {
+  token: string;
+  cards: CardInstanceRow[];
+  lang: UILang;
+  t: T;
+}) {
   const [classes, setClasses] = useState<ClassDef[]>([]);
   const [skills, setSkills] = useState<SkillCardDef[]>([]);
   const [words, setWords] = useState<WordCardDef[]>([]);
@@ -34,7 +45,7 @@ export default function Collection({ token, cards }: { token: string; cards: Car
 
   return (
     <div>
-      <h2>角色卡</h2>
+      <h2>{t("collection.characters")}</h2>
       <div className="card-row">
         {characters.map((c) => {
           const cls = c.class_id ? classById.get(c.class_id as ClassDef["id"]) : undefined;
@@ -42,24 +53,25 @@ export default function Collection({ token, cards }: { token: string; cards: Car
             <div key={c.instance_id} className={`card rarity-${c.rarity}`}>
               <div className="card-name">{c.name ?? c.def_id}</div>
               <div className="card-text">
-                {cls?.name ?? c.class_id} · {cls?.combat ? "可参战" : "功能职业"}
+                {cls ? localizeClassName(cls, lang) : c.class_id} ·{" "}
+                {cls?.combat ? t("collection.combat") : t("collection.functional")}
               </div>
             </div>
           );
         })}
       </div>
-      <h2>技能卡</h2>
+      <h2>{t("collection.skills")}</h2>
       <div className="card-row">
         {skillCards.map((c) => {
           const def = skillById.get(c.def_id);
-          return def ? <SkillCardView key={c.instance_id} def={def} /> : null;
+          return def ? <SkillCardView key={c.instance_id} def={def} lang={lang} t={t} /> : null;
         })}
       </div>
-      <h2>单词卡</h2>
+      <h2>{t("collection.words")}</h2>
       <div className="card-row">
         {wordCards.map((c) => {
           const def = wordById.get(c.def_id);
-          return def ? <WordCardView key={c.instance_id} def={def} /> : null;
+          return def ? <WordCardView key={c.instance_id} def={def} t={t} /> : null;
         })}
       </div>
     </div>

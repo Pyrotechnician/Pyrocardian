@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import Collection, { type CardInstanceRow } from "./Collection";
 import Library from "./Library";
+import type { T, UILang } from "../i18n";
 
 interface MeResponse {
   user: { id: string; email: string; created_at: number };
@@ -10,14 +11,26 @@ interface MeResponse {
 
 type Tab = "collection" | "library" | "arena" | "forge";
 
-const TABS: [Tab, string][] = [
-  ["collection", "收藏馆"],
-  ["library", "图书馆"],
-  ["arena", "竞技场"],
-  ["forge", "熔炉"],
+const TAB_KEYS: [Tab, string][] = [
+  ["collection", "town.collection"],
+  ["library", "town.library"],
+  ["arena", "town.arena"],
+  ["forge", "town.forge"],
 ];
 
-export default function Town({ token, onLogout }: { token: string; onLogout: () => void }) {
+export default function Town({
+  token,
+  lang,
+  onLangChange,
+  onLogout,
+  t,
+}: {
+  token: string;
+  lang: UILang;
+  onLangChange: (lang: UILang) => void;
+  onLogout: () => void;
+  t: T;
+}) {
   const [tab, setTab] = useState<Tab>("collection");
   const [me, setMe] = useState<MeResponse | null>(null);
 
@@ -28,26 +41,27 @@ export default function Town({ token, onLogout }: { token: string; onLogout: () 
   return (
     <div className="town">
       <header className="town-header">
-        <h1>卡迪安小镇广场</h1>
+        <h1>{t("town.title")}</h1>
         <div className="town-user">
           <span>{me?.user.email ?? ""}</span>
-          <button onClick={onLogout}>离开世界</button>
+          <button className="ghost" onClick={() => onLangChange(lang === "zh" ? "en" : "zh")}>
+            {t("town.lang")}
+          </button>
+          <button onClick={onLogout}>{t("town.logout")}</button>
         </div>
       </header>
       <nav className="town-nav">
-        {TABS.map(([id, label]) => (
+        {TAB_KEYS.map(([id, key]) => (
           <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}>
-            {label}
+            {t(key)}
           </button>
         ))}
       </nav>
       <main>
-        {tab === "collection" && me && <Collection token={token} cards={me.cards} />}
-        {tab === "library" && <Library token={token} />}
-        {tab === "arena" && <p className="placeholder">竞技场施工中：PvE 关卡与好友房即将到来。</p>}
-        {tab === "forge" && (
-          <p className="placeholder">熔炉施工中：分解/合成（学者专属）即将到来。</p>
-        )}
+        {tab === "collection" && me && <Collection token={token} cards={me.cards} lang={lang} t={t} />}
+        {tab === "library" && <Library token={token} t={t} />}
+        {tab === "arena" && <p className="placeholder">{t("town.arenaPlaceholder")}</p>}
+        {tab === "forge" && <p className="placeholder">{t("town.forgePlaceholder")}</p>}
       </main>
     </div>
   );

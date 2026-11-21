@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { api } from "../api";
+import type { T } from "../i18n";
 
-export default function Login({ onLogin }: { onLogin: (token: string) => void }) {
+export default function Login({ onLogin, t }: { onLogin: (token: string) => void; t: T }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "register">("register");
@@ -17,34 +18,35 @@ export default function Login({ onLogin }: { onLogin: (token: string) => void })
       });
       onLogin(res.token);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "出错了");
+      const code = err instanceof Error ? err.message : "unknown";
+      setError(t(`error.${code}`));
     }
   };
 
   return (
     <div className="login">
       <h1>卡迪安 Cardian</h1>
-      <p>翻开你的第一张卡，进入卡牌世界。</p>
+      <p>{t("app.tagline")}</p>
       <form onSubmit={submit}>
         <input
           type="email"
-          placeholder="邮箱"
+          placeholder={t("login.email")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
         <input
           type="password"
-          placeholder="密码（至少 6 位）"
+          placeholder={t("login.password")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           minLength={6}
         />
-        <button type="submit">{mode === "login" ? "进入世界" : "注册并进入世界"}</button>
+        <button type="submit">{mode === "login" ? t("login.submitLogin") : t("login.submitRegister")}</button>
       </form>
       <button className="link" onClick={() => setMode(mode === "login" ? "register" : "login")}>
-        {mode === "login" ? "没有账号？注册新角色" : "已有账号？登录"}
+        {mode === "login" ? t("login.switchToRegister") : t("login.switchToLogin")}
       </button>
       {error && <p className="error">{error}</p>}
     </div>

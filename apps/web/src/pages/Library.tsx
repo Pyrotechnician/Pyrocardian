@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { WordCardDef } from "@pyrocardian/shared";
 import { api } from "../api";
 import { WordCardView } from "../components/CardView";
+import type { T } from "../i18n";
 
 interface DueRow {
   word_id: string;
@@ -9,7 +10,7 @@ interface DueRow {
   due_at: number;
 }
 
-export default function Library({ token }: { token: string }) {
+export default function Library({ token, t }: { token: string; t: T }) {
   const [words, setWords] = useState<WordCardDef[]>([]);
   const [due, setDue] = useState<DueRow[]>([]);
   const [revealed, setRevealed] = useState(false);
@@ -35,20 +36,20 @@ export default function Library({ token }: { token: string }) {
 
   return (
     <div>
-      <h2>图书馆 · 今日待复习 {dueWords.length} 张</h2>
-      <button onClick={() => setRevealed((r) => !r)}>{revealed ? "隐藏释义" : "显示释义"}</button>
+      <h2>{t("library.title", { n: dueWords.length })}</h2>
+      <button onClick={() => setRevealed((r) => !r)}>{revealed ? t("library.hide") : t("library.show")}</button>
       <div className="card-row">
         {dueWords.map((w) => (
           <div key={w.id}>
-            <WordCardView def={w} showTranslation={revealed} />
+            <WordCardView def={w} showTranslation={revealed} t={t} />
             <div className="review-buttons">
-              <button onClick={() => review(w.id, false)}>不认识</button>
-              <button onClick={() => review(w.id, true)}>认识</button>
+              <button onClick={() => review(w.id, false)}>{t("library.forgot")}</button>
+              <button onClick={() => review(w.id, true)}>{t("library.remember")}</button>
             </div>
           </div>
         ))}
       </div>
-      {dueWords.length === 0 && <p>今天没有待复习的单词卡，去广场逛逛吧。</p>}
+      {dueWords.length === 0 && <p>{t("library.empty")}</p>}
     </div>
   );
 }

@@ -11,7 +11,7 @@ export async function api<T>(
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error((data as { error?: string }).error ?? `请求失败 (${res.status})`);
+    throw new Error((data as { error?: string }).error ?? "http_error");
   }
   return data as T;
 }

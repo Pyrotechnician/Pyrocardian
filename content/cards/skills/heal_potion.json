@@ -1,11 +1,13 @@
 {
   "id": "heal_potion",
   "name": "治疗药水",
+  "nameEn": "Healing Potion",
   "kind": "heal",
   "rarity": "common",
   "cost": 2,
   "target": "self",
   "power": 4,
   "effects": [],
-  "text": "为自己恢复 4 点生命。"
+  "text": "为自己恢复 4 点生命。",
+  "textEn": "Restore 4 HP to yourself."
 }

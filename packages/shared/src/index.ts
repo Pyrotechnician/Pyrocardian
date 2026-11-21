@@ -32,10 +32,12 @@ export type CombatRole = "damage" | "summon" | "tank" | "support";
 export interface ClassDef {
   id: ClassId;
   name: string;
+  nameEn?: string;
   combat: boolean;
   role?: CombatRole;
   slotsByRarity: Record<Rarity, number>;
   description: string;
+  descriptionEn?: string;
 }
 
 export type SkillKind = "damage" | "heal" | "shield" | "buff" | "debuff" | "summon" | "draw";
@@ -54,6 +56,8 @@ export interface SkillCardDef {
   summonId?: string;
   effects: string[];
   text: string;
+  nameEn?: string;
+  textEn?: string;
 }
 
 export interface SummonDef {
@@ -62,6 +66,7 @@ export interface SummonDef {
   hp: number;
   attack: number;
   text: string;
+  textEn?: string;
 }
 
 export interface WordCardDef {
@@ -107,6 +112,8 @@ export function validateClassDef(def: unknown): string[] {
     }
   }
   if (typeof def.description !== "string") errors.push(`${id}: 缺少描述`);
+  if (def.nameEn !== undefined && typeof def.nameEn !== "string") errors.push(`${id}: nameEn 必须是字符串`);
+  if (def.descriptionEn !== undefined && typeof def.descriptionEn !== "string") errors.push(`${id}: descriptionEn 必须是字符串`);
   return errors;
 }
 
@@ -130,6 +137,8 @@ export function validateSkillCard(def: unknown): string[] {
   }
   if (!Array.isArray(def.effects)) errors.push(`${id}: effects 必须是数组`);
   if (typeof def.text !== "string") errors.push(`${id}: 缺少描述文本`);
+  if (def.nameEn !== undefined && typeof def.nameEn !== "string") errors.push(`${id}: nameEn 必须是字符串`);
+  if (def.textEn !== undefined && typeof def.textEn !== "string") errors.push(`${id}: textEn 必须是字符串`);
   return errors;
 }
 
@@ -140,6 +149,7 @@ export function validateSummonDef(def: unknown): string[] {
   if (typeof def.name !== "string" || !def.name) errors.push(`${id}: 缺少名称`);
   if (typeof def.hp !== "number" || def.hp <= 0) errors.push(`${id}: hp 应为正数`);
   if (typeof def.attack !== "number" || def.attack < 0) errors.push(`${id}: attack 应为非负数`);
+  if (def.textEn !== undefined && typeof def.textEn !== "string") errors.push(`${id}: textEn 必须是字符串`);
   return errors;
 }
 
