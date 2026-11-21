@@ -8,7 +8,12 @@ import {
   ELEMENT_COUNTER_MULTIPLIER,
   SummonState,
 } from "@pyrocardian/shared/battle";
-import type { Element, Rarity, SkillCardDef } from "@pyrocardian/shared";
+import {
+  type Element,
+  type Rarity,
+  type RecruitOffer,
+  type SkillCardDef,
+} from "@pyrocardian/shared";
 import { verifyToken } from "../auth";
 import { ctx } from "../context";
 
@@ -23,39 +28,66 @@ const BASIC_ATTACK_DAMAGE = 2;
 const BURN_DAMAGE = 2;
 const MAX_SUMMONS = 2;
 const LOG_LIMIT = 60;
+const AI_SESSION_ID = "ai";
+const AI_THINK_MS = 600;
 
-interface JoinOptions {
+interface RoomOptions {
+  mode?: "pvp" | "pve";
   token?: string;
   userId?: string;
   characterInstanceId?: string;
+  bossClassId?: string;
+  recruit?: RecruitOffer;
 }
 
 export class BattleRoom extends Room<BattleState> {
-  maxClients = 2;
+  private roomOptions: RoomOptions = {};
 
-  onAuth(_client: Client, options: JoinOptions) {
+  onAuth(_client: Client, options: RoomOptions) {
     const payload = options?.token ? verifyToken(String(options.token), ctx.jwtSecret) : null;
     if (!payload || typeof payload.sub !== "string") return false;
     options.userId = payload.sub;
     return true;
   }
 
-  onCreate() {
+  onCreate(options: RoomOptions) {
+    this.roomOptions = options ?? {};
     this.setState(new BattleState());
+    this.state.mode = this.roomOptions.mode === "pve" ? "pve" : "pvp";
+    if (this.state.mode === "pve") this.maxClients = 1;
     this.onMessage("playCard", (client, message: { handIndex?: number }) =>
-      this.playCard(client, message)
+      this.playCard(client.sessionId, message)
     );
-    this.onMessage("attack", (client) => this.attack(client));
-    this.onMessage("endTurn", (client) => this.endTurn(client));
+    this.onMessage("attack", (client) => this.attack(client.sessionId));
+    this.onMessage("endTurn", (client) => this.endTurn(client.sessionId));
+    if (this.state.mode === "pve") {
+      const boss = this.buildBossPlayer();
+      if (boss) {
+        this.state.players.set(AI_SESSION_ID, boss);
+      }
+    }
   }
 
-  onJoin(client: Client, options: JoinOptions) {
-    if (this.state.phase !== "waiting") return;
-    const player = this.buildPlayer(options);
-    if (!player) return;
-    this.state.players.set(client.sessionId, player);
-    this.pushLog(`${player.displayName} 加入了战斗`);
-    if (this.state.players.size === 2) {
+  onJoin(client: Client, options: RoomOptions) {
+    if (this.state.mode === "pvp") {
+      if (this.state.phase !== "waiting") return;
+      const player = this.buildPvPPlayer(options);
+      if (!player) return;
+      this.state.players.set(client.sessionId, player);
+      this.pushLog(`${player.displayName} 加入了战斗`);
+      if (this.state.players.size === 2) {
+        this.state.phase = "playing";
+        const ids = [...this.state.players.keys()];
+        const first = ids[Math.floor(Math.random() * ids.length)];
+        this.state.turn = first;
+        this.pushLog("战斗开始！");
+        this.beginTurn(first, 0);
+      }
+    } else {
+      const player = this.buildPvEPlayer(options);
+      if (!player) return;
+      this.state.players.set(client.sessionId, player);
+      this.pushLog(`${player.displayName} 应战 ${this.state.players.get(AI_SESSION_ID)?.displayName}`);
       this.state.phase = "playing";
       const ids = [...this.state.players.keys()];
       const first = ids[Math.floor(Math.random() * ids.length)];
@@ -68,17 +100,17 @@ export class BattleRoom extends Room<BattleState> {
   onLeave(client: Client) {
     const player = this.state.players.get(client.sessionId);
     this.state.players.delete(client.sessionId);
-    if (this.state.phase === "playing" && this.state.players.size === 1) {
-      const winner = [...this.state.players.keys()][0];
-      this.state.winner = winner;
+    if (this.state.phase === "playing" && this.state.players.size < (this.state.mode === "pve" ? 2 : 2)) {
       this.state.phase = "ended";
-      this.pushLog(`${player?.displayName ?? "玩家"} 离开了，${this.state.players.get(winner)?.displayName} 获胜`);
+      const winner = [...this.state.players.keys()][0] ?? "";
+      this.state.winner = winner;
+      this.pushLog(`${player?.displayName ?? "玩家"} 离开了，${this.state.players.get(winner)?.displayName ?? "对手"} 获胜`);
     } else if (this.state.phase === "waiting") {
       this.state.turn = "";
     }
   }
 
-  private buildPlayer(options: JoinOptions): BattlePlayerState | null {
+  private buildPvPPlayer(options: RoomOptions): BattlePlayerState | null {
     const userId = options.userId;
     const characterInstanceId = String(options.characterInstanceId ?? "");
     if (!userId || !characterInstanceId) return null;
@@ -93,14 +125,13 @@ export class BattleRoom extends Room<BattleState> {
     const classDef = ctx.content.classes.find((c) => c.id === card.class_id);
     if (!classDef || !classDef.combat) return null;
 
-    const maxHp = BASE_HP + (RARITY_HP_BONUS[card.rarity] ?? 0);
     const player = new BattlePlayerState();
     player.userId = userId;
     player.displayName = card.name ?? classDef.name;
     player.classId = classDef.id;
-    player.element = classDef.id.startsWith("mage_") ? classDef.id.slice(5) : "";
-    player.maxHp = maxHp;
-    player.hp = maxHp;
+    player.element = classDef.element ?? "";
+    player.maxHp = BASE_HP + (RARITY_HP_BONUS[card.rarity] ?? 0);
+    player.hp = player.maxHp;
 
     const slotLimit = classDef.slotsByRarity[card.rarity] ?? 2;
     const owned = ctx.db
@@ -111,36 +142,95 @@ export class BattleRoom extends Room<BattleState> {
       .filter((s): s is SkillCardDef => Boolean(s && (!s.classId || s.classId === classDef.id)))
       .slice(0, slotLimit)
       .map((s) => s.id);
-    for (let i = deck.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
+    this.shuffle(deck);
     for (const id of deck) player.deck.push(id);
     for (let i = 0; i < START_HAND; i++) this.drawCard(player);
     return player;
   }
 
-  private playCard(client: Client, message: { handIndex?: number }) {
-    if (this.state.phase !== "playing" || this.state.turn !== client.sessionId) return;
-    const player = this.state.players.get(client.sessionId);
+  private buildPvEPlayer(options: RoomOptions): BattlePlayerState | null {
+    const userId = options.userId;
+    const recruit = options.recruit;
+    if (!userId || !recruit) return null;
+    const classDef = ctx.content.classes.find((c) => c.id === recruit.classId);
+    if (!classDef || !classDef.recruitable) return null;
+
+    const player = new BattlePlayerState();
+    player.userId = userId;
+    player.displayName = recruit.name;
+    player.classId = classDef.id;
+    player.element = classDef.element ?? "";
+    player.maxHp = BASE_HP + (RARITY_HP_BONUS[recruit.rarity] ?? 0);
+    player.hp = player.maxHp;
+
+    const slotLimit = classDef.slotsByRarity[recruit.rarity] ?? 2;
+    const owned = ctx.db
+      .prepare("SELECT instance_id, def_id FROM player_cards WHERE user_id = ? AND kind = 'skill'")
+      .all(userId) as { instance_id: string; def_id: string }[];
+    const playable = owned
+      .map((r) => ({ instanceId: r.instance_id, def: ctx.content.skills.find((s) => s.id === r.def_id) }))
+      .filter((r) => r.def && (!r.def.classId || r.def.classId === classDef.id))
+      .slice(0, slotLimit);
+    const deck = playable.map((r) => r.instanceId);
+    this.shuffle(deck);
+    for (const id of deck) player.deck.push(id);
+    for (let i = 0; i < START_HAND; i++) this.drawCard(player);
+    return player;
+  }
+
+  private buildBossPlayer(): BattlePlayerState | null {
+    const bossClassId = String(this.roomOptions.bossClassId ?? "");
+    const classDef = ctx.content.classes.find((c) => c.id === bossClassId && c.boss);
+    if (!classDef) return null;
+    const boss = new BattlePlayerState();
+    boss.userId = AI_SESSION_ID;
+    boss.displayName = classDef.name;
+    boss.classId = classDef.id;
+    boss.element = classDef.element ?? "";
+    boss.ai = true;
+    boss.maxHp = classDef.hp ?? BASE_HP;
+    boss.hp = boss.maxHp;
+    const deckArr = [...(classDef.deck ?? [])];
+    this.shuffle(deckArr);
+    for (const id of deckArr) boss.deck.push(id);
+    for (let i = 0; i < START_HAND; i++) this.drawCard(boss);
+    return boss;
+  }
+
+  private resolveCard(player: BattlePlayerState, ref: string): SkillCardDef | undefined {
+    if (player.ai || this.state.mode === "pvp") {
+      return ctx.content.skills.find((s) => s.id === ref);
+    }
+    const row = ctx.db
+      .prepare("SELECT def_id FROM player_cards WHERE instance_id = ? AND user_id = ? AND kind = 'skill'")
+      .get(ref, player.userId) as { def_id: string } | undefined;
+    if (!row) return ctx.content.skills.find((s) => s.id === ref);
+    return ctx.content.skills.find((s) => s.id === row.def_id);
+  }
+
+  private playCard(sessionId: string, message: { handIndex?: number }) {
+    if (this.state.phase !== "playing" || this.state.turn !== sessionId) return;
+    const player = this.state.players.get(sessionId);
     if (!player) return;
     const index = Number(message?.handIndex);
     if (!Number.isInteger(index) || index < 0 || index >= player.hand.length) return;
-    const cardId = player.hand[index];
-    const def = ctx.content.skills.find((s) => s.id === cardId);
+    const ref = player.hand[index];
+    if (ref === undefined) return;
+    const def = this.resolveCard(player, ref);
     if (!def || def.cost > player.mana) return;
     player.mana -= def.cost;
     player.hand.splice(index, 1);
-    const opponent = this.opponentOf(client.sessionId);
+    if (this.state.mode === "pve" && !player.ai) {
+      ctx.db
+        .prepare("DELETE FROM player_cards WHERE instance_id = ? AND user_id = ?")
+        .run(ref, player.userId);
+    }
+    const opponent = this.opponentOf(sessionId);
     this.pushLog(`${player.displayName} 打出了「${def.name}」`);
     switch (def.kind) {
       case "damage": {
         let damage = def.power;
-        if (
-          def.element &&
-          opponent &&
-          ELEMENT_BEATS[def.element as Element] === opponent.element
-        ) {
+        if (def.element && opponent && ELEMENT_BEATS[def.element as Element] === opponent.element) {
           damage = Math.round(damage * ELEMENT_COUNTER_MULTIPLIER);
           this.pushLog(`属性克制！伤害提升至 ${damage}`);
         }
@@ -171,6 +261,7 @@ export class BattleRoom extends Room<BattleState> {
             summon.hp = summonDef.hp;
             summon.attack = summonDef.attack;
             player.summons.set(summon.id, summon);
+            this.pushLog(`${player.displayName} 召唤了 ${summonDef.name}！`);
           }
         }
         break;
@@ -189,10 +280,10 @@ export class BattleRoom extends Room<BattleState> {
     this.checkWin();
   }
 
-  private attack(client: Client) {
-    if (this.state.phase !== "playing" || this.state.turn !== client.sessionId) return;
-    const player = this.state.players.get(client.sessionId);
-    const opponent = this.opponentOf(client.sessionId);
+  private attack(sessionId: string) {
+    if (this.state.phase !== "playing" || this.state.turn !== sessionId) return;
+    const player = this.state.players.get(sessionId);
+    const opponent = this.opponentOf(sessionId);
     if (!player || !opponent || player.attacked) return;
     player.attacked = true;
     this.dealDamage(player, opponent, BASIC_ATTACK_DAMAGE);
@@ -200,9 +291,9 @@ export class BattleRoom extends Room<BattleState> {
     this.checkWin();
   }
 
-  private endTurn(client: Client) {
-    if (this.state.phase !== "playing" || this.state.turn !== client.sessionId) return;
-    const nextId = this.opponentSessionOf(client.sessionId);
+  private endTurn(sessionId: string) {
+    if (this.state.phase !== "playing" || this.state.turn !== sessionId) return;
+    const nextId = this.opponentSessionOf(sessionId);
     if (!nextId) return;
     this.state.turn = nextId;
     this.beginTurn(nextId, 0);
@@ -240,6 +331,42 @@ export class BattleRoom extends Room<BattleState> {
       }
     }
     this.checkWin();
+    this.maybeRunAi();
+  }
+
+  private maybeRunAi() {
+    if (this.state.mode !== "pve" || this.state.phase !== "playing") return;
+    if (this.state.turn !== AI_SESSION_ID) return;
+    this.clock.setTimeout(() => this.aiAct(AI_SESSION_ID), AI_THINK_MS);
+  }
+
+  private aiAct(sessionId: string) {
+    if (this.state.mode !== "pve" || this.state.phase !== "playing" || this.state.turn !== sessionId) {
+      return;
+    }
+    const ai = this.state.players.get(sessionId);
+    if (!ai) return;
+    const hand = [...ai.hand] as string[];
+    let best = -1;
+    let bestCost = -1;
+    hand.forEach((ref, i) => {
+      const def = this.resolveCard(ai, ref);
+      if (def && def.cost <= ai.mana && def.cost > bestCost) {
+        best = i;
+        bestCost = def.cost;
+      }
+    });
+    if (best >= 0) {
+      this.playCard(sessionId, { handIndex: best });
+      this.maybeRunAi();
+      return;
+    }
+    if (!ai.attacked) {
+      this.attack(sessionId);
+      this.maybeRunAi();
+      return;
+    }
+    this.endTurn(sessionId);
   }
 
   private drawCard(player: BattlePlayerState) {
@@ -258,11 +385,7 @@ export class BattleRoom extends Room<BattleState> {
     player.hand.push(cardId);
   }
 
-  private dealDamage(
-    _source: BattlePlayerState | null,
-    target: BattlePlayerState,
-    damage: number
-  ) {
+  private dealDamage(_source: BattlePlayerState | null, target: BattlePlayerState, damage: number) {
     if (target.shield > 0) {
       const absorbed = Math.min(target.shield, damage);
       target.shield -= absorbed;
@@ -272,12 +395,62 @@ export class BattleRoom extends Room<BattleState> {
   }
 
   private checkWin() {
+    if (this.state.phase !== "playing") return;
     for (const [sessionId, player] of this.state.players.entries()) {
       if (player.hp <= 0) {
         this.state.phase = "ended";
-        this.state.winner = this.opponentSessionOf(sessionId);
-        this.pushLog(`${player.displayName} 倒下了，${this.state.players.get(this.state.winner)?.displayName ?? "对手"} 获胜！`);
+        const winnerId = this.opponentSessionOf(sessionId);
+        this.state.winner = winnerId;
+        this.pushLog(
+          `${player.displayName} 倒下了，${this.state.players.get(winnerId)?.displayName ?? "对手"} 获胜！`
+        );
+        this.applyResult(winnerId);
       }
+    }
+  }
+
+  private applyResult(winnerId: string) {
+    if (this.state.mode !== "pve") return;
+    const humanEntry = [...this.state.players.entries()].find(([, p]) => !p.ai);
+    if (!humanEntry) return;
+    const [humanSessionId, human] = humanEntry;
+    const won = winnerId === humanSessionId;
+    const stones = won ? 30 : 5;
+    const xpGain = won ? 50 : 10;
+    ctx.db
+      .prepare("UPDATE users SET magic_stones = magic_stones + ? WHERE id = ?")
+      .run(stones, human.userId);
+    const v = ctx.db
+      .prepare("SELECT xp, level, affinity_points FROM visitor WHERE user_id = ?")
+      .get(human.userId) as { xp: number; level: number; affinity_points: number } | undefined;
+    let xp = (v?.xp ?? 0) + xpGain;
+    let level = v?.level ?? 1;
+    let points = v?.affinity_points ?? 0;
+    while (xp >= level * 100) {
+      xp -= level * 100;
+      level++;
+      points += 2;
+    }
+    ctx.db
+      .prepare(
+        `INSERT INTO visitor (user_id, xp, level, affinity_points) VALUES (?, ?, ?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET xp = excluded.xp, level = excluded.level, affinity_points = excluded.affinity_points`
+      )
+      .run(human.userId, xp, level, points);
+    if (won) {
+      const ancientDefs = ctx.content.ancient;
+      const count = 1 + (Math.random() < 0.35 ? 1 : 0);
+      for (let i = 0; i < count; i++) {
+        const def = ancientDefs[Math.floor(Math.random() * ancientDefs.length)];
+        ctx.db
+          .prepare(
+            "INSERT INTO player_cards (instance_id, user_id, kind, def_id, rarity, class_id, name, created_at) VALUES (?, ?, 'ancient', ?, ?, null, null, ?)"
+          )
+          .run(crypto.randomUUID(), human.userId, def.id, def.rarity, Date.now());
+      }
+      this.pushLog(`奖励：魔晶石 +${stones}，访客经验 +${xpGain}，古老的卡牌 x${count}`);
+    } else {
+      this.pushLog(`战败回城：返还旅费 魔晶石 +${stones}，访客经验 +${xpGain}`);
     }
   }
 
@@ -293,6 +466,13 @@ export class BattleRoom extends Room<BattleState> {
       if (id !== sessionId) return player;
     }
     return null;
+  }
+
+  private shuffle(arr: string[]) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
   }
 
   private pushLog(message: string) {

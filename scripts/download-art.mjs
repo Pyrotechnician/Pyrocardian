@@ -10,11 +10,16 @@ fs.mkdirSync(outDir, { recursive: true });
 
 for (const file of fs.readdirSync(genDir).filter((f) => f.endsWith(".json"))) {
   const cardId = file.replace(/\.json$/, "");
+  const target = path.join(outDir, `${cardId}.jpg`);
+  if (fs.existsSync(target)) {
+    console.log(`skip ${cardId}.jpg (already exists)`);
+    continue;
+  }
   let parsed = JSON.parse(fs.readFileSync(path.join(genDir, file), "utf8"));
   if (typeof parsed === "string") parsed = JSON.parse(parsed);
   const res = await fetch(parsed.url);
   if (!res.ok) throw new Error(`download failed for ${cardId}: ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());
-  fs.writeFileSync(path.join(outDir, `${cardId}.jpg`), buf);
+  fs.writeFileSync(target, buf);
   console.log(`saved ${cardId}.jpg (${buf.length} bytes)`);
 }

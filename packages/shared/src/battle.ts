@@ -34,10 +34,12 @@ export class BattlePlayerState extends Schema {
   @type("number") frozen = 0;
   @type("number") burn = 0;
   @type("boolean") attacked = false;
+  @type("boolean") ai = false;
 }
 
 export class BattleState extends Schema {
   @type({ map: BattlePlayerState }) players = new MapSchema<BattlePlayerState>();
+  @type("string") mode: "pvp" | "pve" = "pvp";
   @type("string") turn = "";
   @type("string") phase: "waiting" | "playing" | "ended" = "waiting";
   @type("string") winner = "";

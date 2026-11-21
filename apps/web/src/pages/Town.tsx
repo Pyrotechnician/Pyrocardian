@@ -3,6 +3,7 @@ import { api } from "../api";
 import BattlePanel from "./Battle";
 import Collection, { type CardInstanceRow } from "./Collection";
 import Library from "./Library";
+import Portal from "./Portal";
 import type { T, UILang } from "../i18n";
 
 interface MeResponse {
@@ -10,12 +11,13 @@ interface MeResponse {
   cards: CardInstanceRow[];
 }
 
-type Tab = "collection" | "library" | "arena" | "forge";
+type Tab = "collection" | "library" | "arena" | "portal" | "forge";
 
 const TAB_KEYS: [Tab, string][] = [
   ["collection", "town.collection"],
   ["library", "town.library"],
   ["arena", "town.arena"],
+  ["portal", "town.portal"],
   ["forge", "town.forge"],
 ];
 
@@ -61,7 +63,8 @@ export default function Town({
       <main>
         {tab === "collection" && me && <Collection token={token} cards={me.cards} lang={lang} t={t} />}
         {tab === "library" && <Library token={token} t={t} />}
-        {tab === "arena" && <BattlePanel token={token} t={t} />}
+        {tab === "arena" && <BattlePanel token={token} lang={lang} t={t} />}
+        {tab === "portal" && <Portal token={token} lang={lang} t={t} />}
         {tab === "forge" && <p className="placeholder">{t("town.forgePlaceholder")}</p>}
       </main>
     </div>

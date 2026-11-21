@@ -1,0 +1,15 @@
+{
+  "id": "frost_nova",
+  "name": "霜冻新星",
+  "nameEn": "Frost Nova",
+  "kind": "damage",
+  "rarity": "epic",
+  "cost": 4,
+  "target": "enemy",
+  "power": 6,
+  "classId": "boss_frost_giant",
+  "element": "ice",
+  "effects": ["freeze"],
+  "text": "霜巨人专属：对敌方造成 6 点伤害，并冻结其一回合。",
+  "textEn": "Frost Giant exclusive: deal 6 damage and freeze the enemy for a turn."
+}

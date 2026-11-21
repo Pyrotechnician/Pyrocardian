@@ -24,6 +24,27 @@ const MIGRATIONS: string[] = [
     due_at INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (user_id, word_id)
   )`,
+  "ALTER TABLE users ADD COLUMN magic_stones INTEGER NOT NULL DEFAULT 0",
+  `CREATE TABLE IF NOT EXISTS visitor (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    xp INTEGER NOT NULL DEFAULT 0,
+    level INTEGER NOT NULL DEFAULT 1,
+    affinity_points INTEGER NOT NULL DEFAULT 0,
+    affinity TEXT NOT NULL DEFAULT '{}'
+  )`,
+  `CREATE TABLE player_cards_v2 (
+    instance_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL CHECK (kind IN ('character', 'skill', 'word', 'ancient')),
+    def_id TEXT NOT NULL,
+    rarity TEXT NOT NULL,
+    class_id TEXT,
+    name TEXT,
+    created_at INTEGER NOT NULL
+  )`,
+  "INSERT INTO player_cards_v2 SELECT * FROM player_cards",
+  "DROP TABLE player_cards",
+  "ALTER TABLE player_cards_v2 RENAME TO player_cards",
 ];
 
 export function openDb(dbPath: string): SqliteDatabase {

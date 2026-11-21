@@ -3,112 +3,58 @@ import { Client, type Room } from "colyseus.js";
 import type { BattlePlayerState, BattleState } from "@pyrocardian/shared/battle";
 import type { ClassDef, SkillCardDef } from "@pyrocardian/shared";
 import { api } from "../api";
-import { localizeSkillName, localizeSkillText, type T } from "../i18n";
+import { localizeSkillName, localizeSkillText, type T, type UILang } from "../i18n";
 import type { CardInstanceRow } from "./Collection";
 
-function wsUrl(): string {
+export function wsUrl(): string {
   if (import.meta.env.DEV) return "http://localhost:3000";
   return `${location.protocol}//${location.host}`;
 }
 
-export default function BattlePanel({ token, t }: { token: string; t: T }) {
-  const [me, setMe] = useState<{ cards: CardInstanceRow[] } | null>(null);
-  const [classes, setClasses] = useState<ClassDef[]>([]);
+interface MeResponse {
+  user: { id: string; email: string; magic_stones: number };
+  cards: CardInstanceRow[];
+}
+
+export function BattleView({
+  room,
+  token,
+  lang,
+  t,
+  onLeave,
+}: {
+  room: Room<BattleState>;
+  token: string;
+  lang: UILang;
+  t: T;
+  onLeave: () => void;
+}) {
   const [skills, setSkills] = useState<SkillCardDef[]>([]);
-  const [characterId, setCharacterId] = useState("");
-  const [roomIdInput, setRoomIdInput] = useState("");
-  const [room, setRoom] = useState<Room<BattleState> | null>(null);
-  const [error, setError] = useState("");
+  const [instanceDef, setInstanceDef] = useState<Map<string, string>>(new Map());
   const [, force] = useReducer((x: number) => x + 1, 0);
-  const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
-    api<{ cards: CardInstanceRow[] }>("/me", { token }).then(setMe);
-    api<ClassDef[]>("/content/classes").then(setClasses);
     api<SkillCardDef[]>("/content/skills").then(setSkills);
+    api<MeResponse>("/me", { token }).then((me) =>
+      setInstanceDef(new Map(me.cards.map((c) => [c.instance_id, c.def_id])))
+    );
   }, [token]);
 
   useEffect(() => {
-    if (!room) return;
-    room.onStateChange(() => force());
+    const cb = () => force();
+    room.onStateChange(cb);
+    return () => {
+      room.onStateChange.remove(cb);
+    };
   }, [room]);
 
   useEffect(() => {
     return () => {
-      room?.leave();
+      room.leave();
     };
   }, [room]);
 
-  const combatCharacters = (me?.cards ?? []).filter((c) => c.kind === "character");
-  const classById = new Map(classes.map((c) => [c.id, c]));
   const skillById = new Map(skills.map((s) => [s.id, s]));
-
-  const getClient = () => {
-    if (!clientRef.current) clientRef.current = new Client(wsUrl());
-    return clientRef.current;
-  };
-
-  const join = async (action: "create" | "joinById" | "joinOrCreate") => {
-    setError("");
-    if (!characterId) {
-      setError(t("battle.needCharacter"));
-      return;
-    }
-    try {
-      const client = getClient();
-      const options = { token, characterInstanceId: characterId };
-      let r: Room<BattleState>;
-      if (action === "create") r = await client.create<BattleState>("battle", options);
-      else if (action === "joinById") {
-        if (!roomIdInput.trim()) {
-          setError(t("battle.needRoom"));
-          return;
-        }
-        r = await client.joinById<BattleState>(roomIdInput.trim(), options);
-      } else r = await client.joinOrCreate<BattleState>("battle", options);
-      setRoom(r);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t("error.unknown"));
-    }
-  };
-
-  if (!room) {
-    return (
-      <div className="battle-lobby">
-        <h2>{t("battle.title")}</h2>
-        <p>{t("battle.choose")}</p>
-        <div className="card-row">
-          {combatCharacters.map((c) => {
-            const cls = c.class_id ? classById.get(c.class_id as ClassDef["id"]) : undefined;
-            const active = characterId === c.instance_id;
-            return (
-              <button
-                key={c.instance_id}
-                className={`card selectable rarity-${c.rarity} ${active ? "active" : ""}`}
-                onClick={() => setCharacterId(c.instance_id)}
-              >
-                <div className="card-name">{c.name ?? c.def_id}</div>
-                <div className="card-text">{cls?.name ?? c.class_id}</div>
-              </button>
-            );
-          })}
-        </div>
-        {combatCharacters.length === 0 && <p>{t("battle.noCharacter")}</p>}
-        <div className="battle-actions">
-          <button onClick={() => void join("create")}>{t("battle.create")}</button>
-          <button onClick={() => void join("joinOrCreate")}>{t("battle.quick")}</button>
-          <input
-            placeholder={t("battle.roomCode")}
-            value={roomIdInput}
-            onChange={(e) => setRoomIdInput(e.target.value)}
-          />
-          <button onClick={() => void join("joinById")}>{t("battle.join")}</button>
-        </div>
-        {error && <p className="error">{error}</p>}
-      </div>
-    );
-  }
-
   const state = room.state;
   const myId = room.sessionId;
   const mePlayer = state?.players.get(myId) ?? null;
@@ -124,7 +70,7 @@ export default function BattlePanel({ token, t }: { token: string; t: T }) {
     return (
       <div className="battle-player">
         <div className="battle-player-name">
-          {label}: {p.displayName} <span className="card-text">({p.classId})</span>
+          {label}: {p.displayName} <span className="card-text">({p.classId}{p.ai ? " · AI" : ""})</span>
         </div>
         <div className="battle-stats">
           <span>
@@ -159,6 +105,7 @@ export default function BattlePanel({ token, t }: { token: string; t: T }) {
       <div className="battle-top">
         <h2>{t("battle.title")}</h2>
         <div>
+          {state?.mode === "pve" && <span>{t("battle.pve")}</span>}
           {state?.phase === "waiting" && (
             <span>
               {t("battle.roomCode")}: <strong>{room.roomId}</strong> · {t("battle.roomHint")}
@@ -168,7 +115,7 @@ export default function BattlePanel({ token, t }: { token: string; t: T }) {
             <span>{myTurn ? t("battle.myTurn") : t("battle.opponentTurn")}</span>
           )}
           {ended && <span>{iWon ? t("battle.win") : t("battle.lose")}</span>}
-          <button className="ghost" onClick={() => { room.leave(); setRoom(null); }}>
+          <button className="ghost" onClick={onLeave}>
             {t("battle.leave")}
           </button>
         </div>
@@ -191,15 +138,16 @@ export default function BattlePanel({ token, t }: { token: string; t: T }) {
       <div className="card-row">
         {mePlayer && mePlayer.hand.length === 0 && <p className="card-text">{t("battle.empty")}</p>}
         {mePlayer &&
-          ([...mePlayer.hand] as string[]).map((cardId, index) => {
-            const def = skillById.get(cardId);
+          ([...mePlayer.hand] as string[]).map((ref, index) => {
+            const defId = instanceDef.get(ref) ?? ref;
+            const def = skillById.get(defId);
             if (!def) return null;
             const playable = myTurn && def.cost <= mePlayer.mana;
             return (
-              <div key={`${cardId}-${index}`} className={`card rarity-${def.rarity}`}>
+              <div key={`${ref}-${index}`} className={`card rarity-${def.rarity}`}>
                 <div className="card-cost">{def.cost}</div>
-                <div className="card-name">{localizeSkillName(def, "zh")}</div>
-                <div className="card-text">{localizeSkillText(def, "zh")}</div>
+                <div className="card-name">{localizeSkillName(def, lang)}</div>
+                <div className="card-text">{localizeSkillText(def, lang)}</div>
                 <button disabled={!playable} onClick={() => room.send("playCard", { handIndex: index })}>
                   {t("battle.play")}
                 </button>
@@ -211,6 +159,100 @@ export default function BattlePanel({ token, t }: { token: string; t: T }) {
       <ul className="battle-log">
         {state && [...state.log].map((line, i) => <li key={i}>{line}</li>)}
       </ul>
+    </div>
+  );
+}
+
+export default function BattlePanel({ token, lang, t }: { token: string; lang: UILang; t: T }) {
+  const [me, setMe] = useState<MeResponse | null>(null);
+  const [classes, setClasses] = useState<ClassDef[]>([]);
+  const [characterId, setCharacterId] = useState("");
+  const [roomIdInput, setRoomIdInput] = useState("");
+  const [room, setRoom] = useState<Room<BattleState> | null>(null);
+  const [error, setError] = useState("");
+  const clientRef = useRef<Client | null>(null);
+
+  useEffect(() => {
+    api<MeResponse>("/me", { token }).then(setMe);
+    api<ClassDef[]>("/content/classes").then(setClasses);
+  }, [token]);
+
+  const combatCharacters = (me?.cards ?? []).filter((c) => c.kind === "character");
+  const classById = new Map(classes.map((c) => [c.id, c]));
+
+  const getClient = () => {
+    if (!clientRef.current) clientRef.current = new Client(wsUrl());
+    return clientRef.current;
+  };
+
+  const join = async (action: "create" | "joinById" | "joinOrCreate") => {
+    setError("");
+    if (!characterId) {
+      setError(t("battle.needCharacter"));
+      return;
+    }
+    try {
+      const client = getClient();
+      const options = { token, characterInstanceId: characterId };
+      let r: Room<BattleState>;
+      if (action === "create") r = await client.create<BattleState>("battle", options);
+      else if (action === "joinById") {
+        if (!roomIdInput.trim()) {
+          setError(t("battle.needRoom"));
+          return;
+        }
+        r = await client.joinById<BattleState>(roomIdInput.trim(), options);
+      } else r = await client.joinOrCreate<BattleState>("battle", options);
+      setRoom(r);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("error.unknown"));
+    }
+  };
+
+  if (room) {
+    return (
+      <BattleView
+        room={room}
+        token={token}
+        lang={lang}
+        t={t}
+        onLeave={() => setRoom(null)}
+      />
+    );
+  }
+
+  return (
+    <div className="battle-lobby">
+      <h2>{t("battle.title")}</h2>
+      <p>{t("battle.choose")}</p>
+      <div className="card-row">
+        {combatCharacters.map((c) => {
+          const cls = c.class_id ? classById.get(c.class_id) : undefined;
+          const active = characterId === c.instance_id;
+          return (
+            <button
+              key={c.instance_id}
+              className={`card selectable rarity-${c.rarity} ${active ? "active" : ""}`}
+              onClick={() => setCharacterId(c.instance_id)}
+            >
+              <div className="card-name">{c.name ?? c.def_id}</div>
+              <div className="card-text">{cls?.name ?? c.class_id}</div>
+            </button>
+          );
+        })}
+      </div>
+      {combatCharacters.length === 0 && <p>{t("battle.noCharacter")}</p>}
+      <div className="battle-actions">
+        <button onClick={() => void join("create")}>{t("battle.create")}</button>
+        <button onClick={() => void join("joinOrCreate")}>{t("battle.quick")}</button>
+        <input
+          placeholder={t("battle.roomCode")}
+          value={roomIdInput}
+          onChange={(e) => setRoomIdInput(e.target.value)}
+        />
+        <button onClick={() => void join("joinById")}>{t("battle.join")}</button>
+      </div>
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }

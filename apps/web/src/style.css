@@ -294,3 +294,58 @@ main {
   border-radius: 10px;
   font-size: 13px;
 }
+
+.portal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.portal-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.affinity-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 8px 0 16px;
+  font-size: 14px;
+}
+
+.affinity-row button {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.identify-result {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .town-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .town-nav {
+    flex-wrap: wrap;
+  }
+
+  .card {
+    width: 44vw;
+    max-width: 160px;
+  }
+
+  .battle-field {
+    flex-direction: column;
+  }
+}
