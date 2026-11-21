@@ -26,6 +26,7 @@ export default function Portal({ token, lang, t }: { token: string; lang: UILang
   const [offers, setOffers] = useState<RecruitOffer[] | null>(null);
   const [room, setRoom] = useState<Room<BattleState> | null>(null);
   const [error, setError] = useState("");
+  const [starting, setStarting] = useState(false);
   const clientRef = useRef<Client | null>(null);
 
   const refresh = useCallback(() => {
@@ -55,7 +56,9 @@ export default function Portal({ token, lang, t }: { token: string; lang: UILang
   };
 
   const startBattle = async (offer: RecruitOffer) => {
+    if (starting) return;
     setError("");
+    setStarting(true);
     try {
       if (!clientRef.current) clientRef.current = new Client(wsUrl());
       const r = await clientRef.current.create<BattleState>("battle", {
@@ -67,6 +70,8 @@ export default function Portal({ token, lang, t }: { token: string; lang: UILang
       setRoom(r);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("error.unknown"));
+    } finally {
+      setStarting(false);
     }
   };
 
@@ -152,10 +157,11 @@ export default function Portal({ token, lang, t }: { token: string; lang: UILang
                 <button
                   key={i}
                   className={`card selectable rarity-${offer.rarity}`}
+                  disabled={starting}
                   onClick={() => void startBattle(offer)}
                 >
                   <ClassArt classId={offer.classId} />
-                  <div className="card-name">{offer.name}</div>
+                  <div className="card-name">{starting ? t("battle.connecting") : offer.name}</div>
                   <div className="card-text">
                     {cls ? localizeClassName(cls, lang) : offer.classId} · {offer.rarity}
                   </div>

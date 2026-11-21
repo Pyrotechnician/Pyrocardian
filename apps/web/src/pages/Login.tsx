@@ -1,8 +1,18 @@
 import { useState, type FormEvent } from "react";
 import { api } from "../api";
-import type { T } from "../i18n";
+import type { T, UILang } from "../i18n";
 
-export default function Login({ onLogin, t }: { onLogin: (token: string) => void; t: T }) {
+export default function Login({
+  onLogin,
+  lang,
+  onLangChange,
+  t,
+}: {
+  onLogin: (token: string) => void;
+  lang: UILang;
+  onLangChange: (lang: UILang) => void;
+  t: T;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "register">("register");
@@ -25,6 +35,12 @@ export default function Login({ onLogin, t }: { onLogin: (token: string) => void
 
   return (
     <div className="login">
+      <button
+        className="ghost lang-toggle"
+        onClick={() => onLangChange(lang === "zh" ? "en" : "zh")}
+      >
+        {t("town.lang")}
+      </button>
       <h1>卡迪安 Cardian</h1>
       <p>{t("app.tagline")}</p>
       <form onSubmit={submit}>

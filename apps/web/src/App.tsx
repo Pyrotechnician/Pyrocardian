@@ -19,6 +19,6 @@ export default function App() {
   }, [lang]);
 
   const t = makeT(lang);
-  if (!token) return <Login onLogin={setToken} t={t} />;
-  return <Town token={token} lang={lang} onLangChange={setLang} onLogout={() => setToken(null)} t={t} />;
+  if (!token) return <Login onLogin={setToken} lang={lang} onLangChange={setLang} t={t} />;
+  return <Town token={token} lang={lang} onLogout={() => setToken(null)} t={t} />;
 }

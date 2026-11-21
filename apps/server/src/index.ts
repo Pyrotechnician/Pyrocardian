@@ -286,8 +286,7 @@ app.post("/api/words/review", authMw, async (c) => {
   return c.json({ ok: true, reps, intervalMs: interval });
 });
 
-const assetsRoot = path.join(repoRoot, "content", "assets");
-app.use("/assets/*", serveStatic({ root: assetsRoot }));
+app.use("/assets/*", serveStatic({ root: path.join(repoRoot, "content") }));
 
 const webDist = path.join(repoRoot, "apps", "web", "dist");
 if (fs.existsSync(webDist)) {
