@@ -16,6 +16,12 @@ export function SkillCardView({ def, lang, t }: { def: SkillCardDef; lang: UILan
   );
 }
 
+export function ClassArt({ classId }: { classId: string | null }) {
+  const [ok, setOk] = useState(true);
+  if (!classId || !ok) return null;
+  return <img src={`/assets/cards/class_${classId}.jpg`} alt={classId} onError={() => setOk(false)} />;
+}
+
 export function WordCardView({
   def,
   showTranslation = true,

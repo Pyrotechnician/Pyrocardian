@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import BattlePanel from "./Battle";
 import Collection, { type CardInstanceRow } from "./Collection";
 import Library from "./Library";
 import type { T, UILang } from "../i18n";
@@ -60,7 +61,7 @@ export default function Town({
       <main>
         {tab === "collection" && me && <Collection token={token} cards={me.cards} lang={lang} t={t} />}
         {tab === "library" && <Library token={token} t={t} />}
-        {tab === "arena" && <p className="placeholder">{t("town.arenaPlaceholder")}</p>}
+        {tab === "arena" && <BattlePanel token={token} t={t} />}
         {tab === "forge" && <p className="placeholder">{t("town.forgePlaceholder")}</p>}
       </main>
     </div>

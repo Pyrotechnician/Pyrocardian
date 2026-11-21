@@ -12,7 +12,16 @@ source and assets of the Cardian world。
 - `apps/server`：单个 Node 进程——Hono 提供 REST API，Colyseus 挂在同一 HTTP server 上提供 WebSocket 战斗房间（服务端权威），同时托管前端构建产物与卡图
 - `packages/shared`：卡牌类型定义 + JSON 内容校验，前后端共用一份卡牌定义
 - `packages/db`：better-sqlite3 访问 SQLite 单文件（WAL 模式），手写迁移
-- `content/cards`：卡牌定义（JSON，数据驱动，改数值直接编辑）；`content/assets/cards`：卡图（文件名 = 卡牌 id）
+- `content/cards`：卡牌定义（JSON，数据驱动，改数值直接编辑）；`content/assets/cards`：卡图（文件名 = 卡牌 id，职业立绘为 `class_<职业id>.jpg`）
+
+## 卡图管线
+
+卡图统一为暖色奇幻 TCG 风格，由内置图像生成工具产出：
+
+1. 为每个卡牌 id 生成一张图，把返回的下载链接 JSON 写入 `/tmp/gen/<card-id>.json`
+2. 运行 `node scripts/download-art.mjs`，自动下载为 `content/assets/cards/<card-id>.jpg`
+
+新卡牌只要同名 jpg 放入该目录即可，前端自动按 id 加载（缺图时自动隐藏图片）。
 
 ## 界面语言
 

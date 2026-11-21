@@ -12,6 +12,7 @@ import { getMeta, openDb, setMeta } from "@pyrocardian/db";
 import type { ClassId } from "@pyrocardian/shared";
 import { hashPassword, signToken, verifyPassword, verifyToken } from "./auth";
 import { loadContent } from "./cards";
+import { initContext } from "./context";
 import { BattleRoom } from "./rooms/BattleRoom";
 
 const { Server } = Colyseus;
@@ -28,6 +29,7 @@ if (!jwtSecret) {
 }
 
 const content = loadContent();
+initContext({ db, content, jwtSecret });
 const TOKEN_TTL_SECONDS = 30 * 24 * 3600;
 
 const NAME_PREFIX = ["雾港的", "林间的", "灯塔下的", "磨坊旁的", "星野的", "港口的"];

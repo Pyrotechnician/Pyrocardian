@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ClassDef, SkillCardDef, WordCardDef } from "@pyrocardian/shared";
 import { api } from "../api";
-import { SkillCardView, WordCardView } from "../components/CardView";
+import { ClassArt, SkillCardView, WordCardView } from "../components/CardView";
 import { localizeClassName, type T, type UILang } from "../i18n";
 
 export interface CardInstanceRow {
@@ -51,6 +51,7 @@ export default function Collection({
           const cls = c.class_id ? classById.get(c.class_id as ClassDef["id"]) : undefined;
           return (
             <div key={c.instance_id} className={`card rarity-${c.rarity}`}>
+              <ClassArt classId={c.class_id} />
               <div className="card-name">{c.name ?? c.def_id}</div>
               <div className="card-text">
                 {cls ? localizeClassName(cls, lang) : c.class_id} ·{" "}
