@@ -27,6 +27,7 @@ const { Server } = Colyseus;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const PORT = Number(process.env.PORT ?? 3000);
+const HOST = process.env.HOST ?? "0.0.0.0";
 const DB_PATH = process.env.DB_PATH ?? path.join(repoRoot, "data", "pyrocardian.db");
 
 const db = openDb(DB_PATH);
@@ -299,6 +300,6 @@ const gameServer = new Server({
 });
 gameServer.define("battle", BattleRoom);
 
-httpServer.listen(PORT, () => {
-  console.log(`[pyrocardian] listening on http://localhost:${PORT} (db: ${DB_PATH})`);
+httpServer.listen(PORT, HOST, () => {
+  console.log(`[pyrocardian] listening on http://${HOST}:${PORT} (db: ${DB_PATH})`);
 });
