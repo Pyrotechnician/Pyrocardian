@@ -6,76 +6,127 @@
     "combat": true,
     "role": "support",
     "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
-    "description": "每个新玩家注册后获得的角色卡，是卡迪安生活的入口，背单词从这里开始。战斗中只能使用通用技能卡。",
-    "descriptionEn": "The character card every new player receives on registration: the gateway to life in Cardian, where word learning begins. In battle only common skill cards can be used."
+    "description": "玩家本人的身份卡，PvP 中使用：可以使用任何技能卡，但没有任何加成。",
+    "descriptionEn": "Your own identity card, used in PvP: can use any skill card, but with no bonuses."
   },
   {
     "id": "scholar",
     "name": "学者",
     "nameEn": "Scholar",
     "combat": false,
+    "npc": true,
     "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
-    "description": "唯一可以在熔炉中合成技能卡的职业。功能性角色，不参与战斗。",
-    "descriptionEn": "The only class that can synthesize skill cards at the forge. A functional character that does not fight."
+    "description": "图书馆的 NPC：鉴定古老的卡牌，用相同卡牌生成制作秘方。",
+    "descriptionEn": "Library NPC: appraises ancient cards and turns duplicates into crafting recipes."
+  },
+  {
+    "id": "caster",
+    "name": "铸造师",
+    "nameEn": "Caster",
+    "combat": false,
+    "npc": true,
+    "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
+    "description": "熔炉的 NPC：把卡牌熔炼成魔晶石，用秘方和原料铸造新卡。",
+    "descriptionEn": "Forge NPC: melts cards into magic stones and crafts new cards from recipes."
   },
   {
     "id": "summoner",
     "name": "召唤师",
     "nameEn": "Summoner",
     "combat": true,
+    "recruitable": true,
     "role": "summon",
     "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
-    "description": "除通用技能卡外，还可以使用召唤技能卡，召唤有独立血量的召唤物并肩作战。",
-    "descriptionEn": "Besides common skill cards, can use summon skill cards to call forth summons with their own HP."
+    "description": "可招募：除通用技能卡外，还可以使用召唤技能卡，召唤有独立血量的召唤物并肩作战。",
+    "descriptionEn": "Recruitable: besides common skill cards, can use summon skill cards to call forth summons with their own HP."
   },
   {
     "id": "mage_fire",
     "name": "火魔法师",
     "nameEn": "Fire Mage",
     "combat": true,
+    "recruitable": true,
     "role": "damage",
+    "element": "fire",
     "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
-    "description": "火系魔法师，专属技能卡附带灼烧效果。",
-    "descriptionEn": "Fire mage; exclusive skill cards apply burn."
+    "description": "可招募：火系魔法师，专属技能卡附带灼烧效果。",
+    "descriptionEn": "Recruitable fire mage; exclusive skill cards apply burn."
   },
   {
     "id": "mage_water",
     "name": "水魔法师",
     "nameEn": "Water Mage",
     "combat": true,
+    "recruitable": true,
     "role": "support",
+    "element": "water",
     "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
-    "description": "水系魔法师，专属技能卡偏治疗与护盾。",
-    "descriptionEn": "Water mage; exclusive skill cards focus on healing and shields."
+    "description": "可招募：水系魔法师，专属技能卡偏治疗与护盾。",
+    "descriptionEn": "Recruitable water mage; exclusive skill cards focus on healing and shields."
   },
   {
     "id": "mage_thunder",
     "name": "雷魔法师",
     "nameEn": "Thunder Mage",
     "combat": true,
+    "recruitable": true,
     "role": "damage",
+    "element": "thunder",
     "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
-    "description": "雷系魔法师，专属技能卡偏先手与连锁伤害。",
-    "descriptionEn": "Thunder mage; exclusive skill cards favor initiative and chain damage."
+    "description": "可招募：雷系魔法师，专属技能卡偏先手与连锁伤害。",
+    "descriptionEn": "Recruitable thunder mage; exclusive skill cards favor initiative and chain damage."
   },
   {
     "id": "mage_ice",
     "name": "冰魔法师",
     "nameEn": "Ice Mage",
     "combat": true,
+    "recruitable": true,
     "role": "damage",
+    "element": "ice",
     "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
-    "description": "冰系魔法师，专属技能卡附带冻结效果。",
-    "descriptionEn": "Ice mage; exclusive skill cards apply freeze."
+    "description": "可招募：冰系魔法师，专属技能卡附带冻结效果。",
+    "descriptionEn": "Recruitable ice mage; exclusive skill cards apply freeze."
   },
   {
     "id": "mage_earth",
     "name": "土魔法师",
     "nameEn": "Earth Mage",
     "combat": true,
+    "recruitable": true,
     "role": "tank",
+    "element": "earth",
     "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
-    "description": "土系魔法师，专属技能卡偏护盾与嘲讽。",
-    "descriptionEn": "Earth mage; exclusive skill cards focus on shields and taunt."
+    "description": "可招募：土系魔法师，专属技能卡偏护盾与嘲讽。",
+    "descriptionEn": "Recruitable earth mage; exclusive skill cards focus on shields and taunt."
+  },
+  {
+    "id": "boss_goblin_king",
+    "name": "哥布林王",
+    "nameEn": "Goblin King",
+    "combat": true,
+    "npc": true,
+    "boss": true,
+    "role": "summon",
+    "hp": 45,
+    "deck": ["summon_goblin", "summon_goblin", "king_slam", "heavy_strike", "strike", "ward"],
+    "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
+    "description": "传送门里的 boss，玩家无法招募。会召唤哥布林仆从。",
+    "descriptionEn": "A portal boss that players cannot recruit. Summons goblin minions."
+  },
+  {
+    "id": "boss_frost_giant",
+    "name": "雪山霜巨人",
+    "nameEn": "Frost Giant",
+    "combat": true,
+    "npc": true,
+    "boss": true,
+    "role": "tank",
+    "hp": 60,
+    "element": "ice",
+    "deck": ["frost_shard", "frost_shard", "frost_nova", "heal_potion", "ward", "heavy_strike"],
+    "slotsByRarity": { "common": 2, "rare": 3, "epic": 4, "legendary": 5 },
+    "description": "更强的传送门 boss，玩家无法招募。冰系冻结攻击。",
+    "descriptionEn": "A stronger portal boss that players cannot recruit. Ice freeze attacks."
   }
 ]

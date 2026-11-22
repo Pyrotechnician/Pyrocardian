@@ -9,6 +9,7 @@ export type Lang = "de" | "en";
 export type ClassId =
   | "visitor"
   | "scholar"
+  | "caster"
   | "summoner"
   | "mage_fire"
   | "mage_water"
@@ -19,6 +20,7 @@ export type ClassId =
 export const CLASS_IDS: ClassId[] = [
   "visitor",
   "scholar",
+  "caster",
   "summoner",
   "mage_fire",
   "mage_water",
@@ -30,11 +32,17 @@ export const CLASS_IDS: ClassId[] = [
 export type CombatRole = "damage" | "summon" | "tank" | "support";
 
 export interface ClassDef {
-  id: ClassId;
+  id: string;
   name: string;
   nameEn?: string;
   combat: boolean;
   role?: CombatRole;
+  npc?: boolean;
+  recruitable?: boolean;
+  boss?: boolean;
+  hp?: number;
+  element?: Element;
+  deck?: string[];
   slotsByRarity: Record<Rarity, number>;
   description: string;
   descriptionEn?: string;
@@ -77,15 +85,40 @@ export interface WordCardDef {
   example?: string;
 }
 
+export interface AncientCardDef {
+  id: string;
+  name: string;
+  nameEn?: string;
+  rarity: Rarity;
+  text: string;
+  textEn?: string;
+}
+
+export const RARITY_RANK: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
+
 export interface CardInstance {
   instanceId: string;
   userId: string;
-  kind: "character" | "skill" | "word";
+  kind: "character" | "skill" | "word" | "ancient";
   defId: string;
   rarity: Rarity;
   classId?: ClassId;
   name?: string;
   createdAt: number;
+}
+
+export interface VisitorProgress {
+  userId: string;
+  xp: number;
+  level: number;
+  affinityPoints: number;
+  affinity: Record<string, number>;
+}
+
+export interface RecruitOffer {
+  classId: string;
+  name: string;
+  rarity: Rarity;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -96,7 +129,7 @@ export function validateClassDef(def: unknown): string[] {
   if (!isObject(def)) return ["职业定义不是对象"];
   const errors: string[] = [];
   const id = String(def.id ?? "(无id)");
-  if (typeof def.id !== "string" || !CLASS_IDS.includes(def.id as ClassId)) {
+  if (typeof def.id !== "string" || (!CLASS_IDS.includes(def.id as ClassId) && !def.id.startsWith("boss_"))) {
     errors.push(`未知职业 id: ${id}`);
   }
   if (typeof def.name !== "string" || !def.name) errors.push(`${id}: 缺少名称`);
@@ -114,6 +147,20 @@ export function validateClassDef(def: unknown): string[] {
   if (typeof def.description !== "string") errors.push(`${id}: 缺少描述`);
   if (def.nameEn !== undefined && typeof def.nameEn !== "string") errors.push(`${id}: nameEn 必须是字符串`);
   if (def.descriptionEn !== undefined && typeof def.descriptionEn !== "string") errors.push(`${id}: descriptionEn 必须是字符串`);
+  if (def.hp !== undefined && (typeof def.hp !== "number" || def.hp <= 0)) errors.push(`${id}: hp 应为正数`);
+  if (def.element !== undefined && !ELEMENTS.includes(def.element as Element)) errors.push(`${id}: 未知元素 ${String(def.element)}`);
+  if (def.deck !== undefined && !Array.isArray(def.deck)) errors.push(`${id}: deck 必须是字符串数组`);
+  return errors;
+}
+
+export function validateAncientCard(def: unknown): string[] {
+  if (!isObject(def)) return ["古卡不是对象"];
+  const errors: string[] = [];
+  const id = typeof def.id === "string" && def.id ? def.id : "(无id)";
+  if (typeof def.id !== "string" || !def.id) errors.push("古卡缺少 id");
+  if (typeof def.name !== "string" || !def.name) errors.push(`${id}: 缺少名称`);
+  if (!RARITIES.includes(def.rarity as Rarity)) errors.push(`${id}: 非法稀有度 ${String(def.rarity)}`);
+  if (typeof def.text !== "string") errors.push(`${id}: 缺少描述文本`);
   return errors;
 }
 
@@ -126,7 +173,11 @@ export function validateSkillCard(def: unknown): string[] {
   if (!RARITIES.includes(def.rarity as Rarity)) errors.push(`${id}: 非法稀有度 ${String(def.rarity)}`);
   if (typeof def.cost !== "number" || def.cost < 0 || def.cost > 10) errors.push(`${id}: 费用应为 0-10`);
   if (typeof def.power !== "number" || def.power < 0) errors.push(`${id}: power 应为非负数`);
-  if (def.classId !== undefined && !CLASS_IDS.includes(def.classId as ClassId)) {
+  if (
+    def.classId !== undefined &&
+    !CLASS_IDS.includes(def.classId as ClassId) &&
+    !(typeof def.classId === "string" && def.classId.startsWith("boss_"))
+  ) {
     errors.push(`${id}: 未知职业 ${String(def.classId)}`);
   }
   if (def.element !== undefined && !ELEMENTS.includes(def.element as Element)) {

@@ -38,4 +38,9 @@ jobs:
             kill "$(cat /tmp/pyro-ci-server.pid)" 2>/dev/null
             exit 1
           fi
+          if ! BASE_URL=http://127.0.0.1:3210 node scripts/pve-test.mjs; then
+            cat /tmp/pyro-ci-server.log
+            kill "$(cat /tmp/pyro-ci-server.pid)" 2>/dev/null
+            exit 1
+          fi
           kill "$(cat /tmp/pyro-ci-server.pid)" 2>/dev/null

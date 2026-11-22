@@ -9,7 +9,15 @@ import { Hono, type Context, type Next } from "hono";
 import { createAdaptorServer } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { getMeta, openDb, setMeta } from "@pyrocardian/db";
-import type { ClassId } from "@pyrocardian/shared";
+import {
+  ELEMENTS,
+  RARITY_RANK,
+  RARITIES,
+  type ClassId,
+  type Element,
+  type Rarity,
+  type RecruitOffer,
+} from "@pyrocardian/shared";
 import { hashPassword, signToken, verifyPassword, verifyToken } from "./auth";
 import { loadContent } from "./cards";
 import { initContext } from "./context";
@@ -19,6 +27,7 @@ const { Server } = Colyseus;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const PORT = Number(process.env.PORT ?? 3000);
+const HOST = process.env.HOST ?? "0.0.0.0";
 const DB_PATH = process.env.DB_PATH ?? path.join(repoRoot, "data", "pyrocardian.db");
 
 const db = openDb(DB_PATH);
@@ -119,16 +128,127 @@ app.post("/api/auth/login", async (c) => {
   return c.json({ token: signToken({ sub: row.id }, jwtSecret, TOKEN_TTL_SECONDS), user: { id: row.id, email } });
 });
 
+function getVisitor(userId: string) {
+  let row = db.prepare("SELECT xp, level, affinity_points, affinity FROM visitor WHERE user_id = ?").get(userId) as
+    | { xp: number; level: number; affinity_points: number; affinity: string }
+    | undefined;
+  if (!row) {
+    db.prepare("INSERT INTO visitor (user_id) VALUES (?)").run(userId);
+    row = { xp: 0, level: 1, affinity_points: 0, affinity: "{}" };
+  }
+  return row;
+}
+
+function rollRarity(): Rarity {
+  const r = Math.random();
+  if (r < 0.6) return "common";
+  if (r < 0.9) return "rare";
+  if (r < 0.99) return "epic";
+  return "legendary";
+}
+
 app.get("/api/me", authMw, (c) => {
   const userId = c.get("userId");
-  const user = db.prepare("SELECT id, email, created_at FROM users WHERE id = ?").get(userId);
+  const user = db
+    .prepare("SELECT id, email, created_at, magic_stones FROM users WHERE id = ?")
+    .get(userId);
   const cards = db
     .prepare(
       "SELECT instance_id, kind, def_id, rarity, class_id, name, created_at FROM player_cards WHERE user_id = ? ORDER BY created_at, instance_id"
     )
     .all(userId);
-  return c.json({ user, cards });
+  const visitor = getVisitor(userId);
+  return c.json({
+    user,
+    cards,
+    visitor: {
+      xp: visitor.xp,
+      level: visitor.level,
+      affinityPoints: visitor.affinity_points,
+      affinity: JSON.parse(visitor.affinity) as Record<string, number>,
+    },
+  });
 });
+
+app.get("/api/portal/bosses", authMw, (c) => {
+  const bosses = content.classes
+    .filter((cl) => cl.boss)
+    .map((cl) => ({
+      ...cl,
+      skills: (cl.deck ?? [])
+        .map((id) => content.skills.find((s) => s.id === id))
+        .filter((s) => Boolean(s)),
+    }));
+  return c.json({ bosses });
+});
+
+app.post("/api/portal/recruit", authMw, (c) => {
+  const userId = c.get("userId");
+  const visitor = getVisitor(userId);
+  const affinity = JSON.parse(visitor.affinity) as Record<string, number>;
+  const pool = content.classes.filter((cl) => cl.recruitable);
+  const used = new Set<string>();
+  const offers: RecruitOffer[] = [];
+  for (let i = 0; i < 3 && used.size < pool.length; i++) {
+    let total = 0;
+    const weights = pool.map((cl) => {
+      if (used.has(cl.id)) return 0;
+      const el = cl.id.startsWith("mage_") ? cl.id.slice(5) : "";
+      const w = 1 + (affinity[el] ?? 0) * 0.5;
+      total += w;
+      return w;
+    });
+    let r = Math.random() * total;
+    let picked = pool[0];
+    for (let j = 0; j < pool.length; j++) {
+      r -= weights[j];
+      if (r <= 0 && !used.has(pool[j].id)) {
+        picked = pool[j];
+        break;
+      }
+    }
+    used.add(picked.id);
+    offers.push({ classId: picked.id, name: randomName(), rarity: rollRarity() });
+  }
+  return c.json({ offers });
+});
+
+app.post("/api/library/identify", authMw, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const instanceId = String(body.instanceId ?? "");
+  const userId = c.get("userId");
+  const row = db
+    .prepare("SELECT def_id, rarity FROM player_cards WHERE instance_id = ? AND user_id = ? AND kind = 'ancient'")
+    .get(instanceId, userId) as { def_id: string; rarity: Rarity } | undefined;
+  if (!row) return c.json({ error: "cards.not_ancient" }, 400);
+  const ancientDef = content.ancient.find((a) => a.id === row.def_id);
+  const minRank = RARITY_RANK[row.rarity] ?? 0;
+  const candidates = content.skills.filter((s) => (RARITY_RANK[s.rarity] ?? 0) >= minRank);
+  const pool = candidates.length > 0 ? candidates : content.skills;
+  const replacement = pool[Math.floor(Math.random() * pool.length)];
+  db.prepare(
+    "UPDATE player_cards SET kind = 'skill', def_id = ?, class_id = null, name = null WHERE instance_id = ? AND user_id = ?"
+  ).run(replacement.id, instanceId, userId);
+  return c.json({ ok: true, instanceId, card: replacement, wasRarity: ancientDef?.rarity ?? row.rarity });
+});
+
+app.post("/api/visitor/affinity", authMw, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const element = String(body.element ?? "");
+  if (!ELEMENTS.includes(element as Element)) return c.json({ error: "visitor.bad_element" }, 400);
+  const userId = c.get("userId");
+  const visitor = getVisitor(userId);
+  if (visitor.affinity_points <= 0) return c.json({ error: "visitor.no_points" }, 400);
+  const affinity = JSON.parse(visitor.affinity) as Record<string, number>;
+  affinity[element] = (affinity[element] ?? 0) + 1;
+  db.prepare("UPDATE visitor SET affinity = ?, affinity_points = affinity_points - 1 WHERE user_id = ?").run(
+    JSON.stringify(affinity),
+    userId
+  );
+  return c.json({ ok: true, affinity, affinityPoints: visitor.affinity_points - 1 });
+});
+
+app.get("/api/content/ancient", (c) => c.json(content.ancient));
 
 app.get("/api/words/due", authMw, (c) => {
   const rows = db
@@ -166,8 +286,7 @@ app.post("/api/words/review", authMw, async (c) => {
   return c.json({ ok: true, reps, intervalMs: interval });
 });
 
-const assetsRoot = path.join(repoRoot, "content", "assets");
-app.use("/assets/*", serveStatic({ root: assetsRoot }));
+app.use("/assets/*", serveStatic({ root: path.join(repoRoot, "content") }));
 
 const webDist = path.join(repoRoot, "apps", "web", "dist");
 if (fs.existsSync(webDist)) {
@@ -180,6 +299,6 @@ const gameServer = new Server({
 });
 gameServer.define("battle", BattleRoom);
 
-httpServer.listen(PORT, () => {
-  console.log(`[pyrocardian] listening on http://localhost:${PORT} (db: ${DB_PATH})`);
+httpServer.listen(PORT, HOST, () => {
+  console.log(`[pyrocardian] listening on http://${HOST}:${PORT} (db: ${DB_PATH})`);
 });

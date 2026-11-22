@@ -6,7 +6,7 @@ import { localizeClassName, type T, type UILang } from "../i18n";
 
 export interface CardInstanceRow {
   instance_id: string;
-  kind: "character" | "skill" | "word";
+  kind: "character" | "skill" | "word" | "ancient";
   def_id: string;
   rarity: string;
   class_id: string | null;
