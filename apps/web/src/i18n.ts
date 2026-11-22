@@ -100,6 +100,7 @@ const messages: Record<UILang, Record<string, string>> = {
     "error.cards.not_ancient": "该卡不是古老的卡牌",
     "error.visitor.bad_element": "未知的元素",
     "error.visitor.no_points": "没有可用的亲和点",
+    "error.wsHint": "提示：若报 WebSocket 连接失败，请确认 12345 是直连 TCP 端口（云安全组放行即可）。开发期可用 ssh -L 12345:127.0.0.1:12345 你的服务器 做本地转发，然后访问 http://localhost:12345",
   },
   en: {
     "app.tagline": "Open your first card and enter the Cardian world.",
@@ -198,6 +199,7 @@ const messages: Record<UILang, Record<string, string>> = {
     "error.cards.not_ancient": "This is not an ancient card",
     "error.visitor.bad_element": "Unknown element",
     "error.visitor.no_points": "No affinity points available",
+    "error.wsHint": "Hint: if WebSocket fails, make sure port 12345 is a direct TCP forward (security group rule is enough). During development you can use ssh -L 12345:127.0.0.1:12345 your-server and open http://localhost:12345",
   },
 };
 

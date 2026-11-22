@@ -31,6 +31,7 @@ export function BattleView({
 }) {
   const [skills, setSkills] = useState<SkillCardDef[]>([]);
   const [instanceDef, setInstanceDef] = useState<Map<string, string>>(new Map());
+  const [roomError, setRoomError] = useState("");
   const [, force] = useReducer((x: number) => x + 1, 0);
 
   useEffect(() => {
@@ -42,9 +43,13 @@ export function BattleView({
 
   useEffect(() => {
     const cb = () => force();
+    const onErr = (code: number, message?: string) =>
+      setRoomError(`room error ${code}${message ? `: ${message}` : ""}`);
     room.onStateChange(cb);
+    room.onError(onErr);
     return () => {
       room.onStateChange.remove(cb);
+      room.onError.remove(onErr);
     };
   }, [room]);
 
@@ -102,6 +107,7 @@ export function BattleView({
 
   return (
     <div className="battle">
+      {roomError && <p className="error">{roomError}</p>}
       <div className="battle-top">
         <h2>{t("battle.title")}</h2>
         <div>

@@ -70,6 +70,12 @@ button.ghost {
   color: #b3372f;
 }
 
+.hint {
+  font-size: 12px;
+  opacity: 0.75;
+  max-width: 640px;
+}
+
 .town-header {
   display: flex;
   justify-content: space-between;

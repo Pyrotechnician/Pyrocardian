@@ -171,7 +171,12 @@ export default function Portal({ token, lang, t }: { token: string; lang: UILang
           </div>
         </>
       )}
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <>
+          <p className="error">{error}</p>
+          <p className="hint">{t("error.wsHint")}</p>
+        </>
+      )}
     </div>
   );
 }

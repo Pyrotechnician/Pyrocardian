@@ -20,8 +20,10 @@ source and assets of the Cardian world。
 
 1. 为每个卡牌 id 生成一张图，把返回的下载链接 JSON 写入 `/tmp/gen/<card-id>.json`
 2. 运行 `node scripts/download-art.mjs`，自动下载为 `content/assets/cards/<card-id>.jpg`
+   （目标子目录可用 `OUT_SUBDIR=town` 指定，如小镇场景图存到 `content/assets/town/`）
 
 新卡牌只要同名 jpg 放入该目录即可，前端自动按 id 加载（缺图时自动隐藏图片）。
+世界页面素材：`content/assets/town/street.jpg`（广场全景）、`building_<id>.jpg`（建筑外景）、`interior_<id>.jpg`（建筑内部背景），建筑 id 为 arena/portal/forge/tavern/shop/library。
 
 ## 界面语言
 
